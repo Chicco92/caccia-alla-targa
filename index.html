@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Caccia alla Targa (000 - 999)</title>
+  <title>Caccia alla Targa Multiplayer</title>
+
+  <!-- Firebase Compat SDKs (compatibili direttamente nel browser senza compilatori) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
   <style>
     :root {
       --bg: #0f172a;
@@ -31,66 +36,148 @@
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
-      padding-bottom: 40px;
+      padding: 16px;
+      padding-bottom: 50px;
     }
 
     header {
       width: 100%;
-      max-width: 600px;
-      padding: 20px 16px 10px;
+      max-width: 580px;
       text-align: center;
+      margin-bottom: 16px;
     }
 
     h1 {
       font-size: 1.5rem;
       font-weight: 800;
-      margin-bottom: 4px;
     }
 
-    /* Gestore Partite */
-    .game-manager {
-      width: calc(100% - 32px);
-      max-width: 568px;
+    .room-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 14px;
+      border-radius: 12px;
+      padding: 10px 14px;
+      width: 100%;
+      max-width: 580px;
       margin-bottom: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      font-size: 0.9rem;
     }
 
-    .game-select-row {
-      display: flex;
-      gap: 8px;
+    .room-bar span b {
+      color: var(--accent);
     }
 
-    select {
-      flex: 1;
-      background: #0f172a;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      outline: none;
-    }
-
-    .btn-secondary {
+    .btn-small {
       background: #334155;
       color: var(--text);
       border: none;
-      padding: 0 14px;
-      border-radius: 10px;
+      padding: 6px 12px;
+      border-radius: 8px;
       font-weight: 600;
       cursor: pointer;
     }
 
-    /* Inserimento Targa */
+    /* Finestra di Accesso / Creazione Stanza */
+    #lobbyModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    .modal-box h2 {
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    /* Classifica Gara */
+    #leaderboardCard {
+      display: none;
+      width: 100%;
+      max-width: 580px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .leaderboard-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .player-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.95rem;
+    }
+
+    /* Input Targa */
     .input-card {
-      width: calc(100% - 32px);
-      max-width: 568px;
+      width: 100%;
+      max-width: 580px;
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 16px;
@@ -122,11 +209,6 @@
       margin: 0;
     }
 
-    input[type="number"]:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-
     button.btn-add {
       background: var(--accent);
       color: #0f172a;
@@ -134,14 +216,14 @@
       border-radius: 12px;
       font-weight: 700;
       font-size: 1rem;
-      padding: 0 22px;
+      padding: 0 24px;
       cursor: pointer;
     }
 
-    /* Statistica Totale */
+    /* Avanzamento Totale */
     .total-card {
-      width: calc(100% - 32px);
-      max-width: 568px;
+      width: 100%;
+      max-width: 580px;
       background: linear-gradient(135deg, #1e293b, #1e1b4b);
       border: 1px solid var(--border);
       border-radius: 16px;
@@ -171,10 +253,10 @@
       transition: width 0.3s ease;
     }
 
-    /* Centinaia */
+    /* Griglie Centinaia */
     .hundreds-container {
-      width: calc(100% - 32px);
-      max-width: 568px;
+      width: 100%;
+      max-width: 580px;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -241,40 +323,50 @@
       border-color: var(--found);
       font-weight: 700;
     }
-
-    .danger-actions {
-      margin-top: 25px;
-      display: flex;
-      gap: 10px;
-    }
-
-    .btn-danger {
-      background: transparent;
-      border: 1px solid #ef4444;
-      color: #ef4444;
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
+
+  <!-- Modal Lobby Iniziale -->
+  <div id="lobbyModal">
+    <div class="modal-box">
+      <h2>🚗 Unisciti alla Partita</h2>
+      <div class="field">
+        <label>Tuo Nome</label>
+        <input type="text" id="playerNameInput" placeholder="Es: Marco" />
+      </div>
+      <div class="field">
+        <label>Codice Stanza (es: VIAGGIO)</label>
+        <input type="text" id="roomIdInput" placeholder="Es: VIAGGIO24" style="text-transform: uppercase;" />
+      </div>
+      <div class="field">
+        <label>Modalità di Gioco</label>
+        <select id="gameModeInput">
+          <option value="coop">🤝 Cooperazione (Stesso album insieme)</option>
+          <option value="vs">⚔️ Tutti contro Tutti (Gara a punti)</option>
+        </select>
+      </div>
+      <button class="btn-primary" id="btnJoin">Inizia a Giocare</button>
+    </div>
+  </div>
 
   <header>
     <h1>🚗 Caccia alla Targa</h1>
   </header>
 
-  <!-- Selezione e Creazione Partite -->
-  <div class="game-manager">
-    <div style="font-size: 0.85rem; color: var(--text-dim);">Partita Attiva:</div>
-    <div class="game-select-row">
-      <select id="gameSelector"></select>
-      <button class="btn-secondary" id="btnNewGame">+ Nuova</button>
-    </div>
+  <!-- Barra Info Partita -->
+  <div class="room-bar">
+    <span>Stanza: <b id="displayRoom">--</b> (<span id="displayMode">--</span>)</span>
+    <button class="btn-small" onclick="location.reload()">Esci</button>
   </div>
 
-  <!-- Input Targa -->
+  <!-- Classifica (Visibile solo in modalità VS) -->
+  <div id="leaderboardCard">
+    <div class="leaderboard-title">🏆 Classifica Giocatori</div>
+    <div id="leaderboardList"></div>
+  </div>
+
+  <!-- Inserimento rapido -->
   <div class="input-card">
     <div class="plate-input-wrapper">
       <input 
@@ -293,7 +385,7 @@
   <!-- Totale -->
   <div class="total-card">
     <div class="total-header">
-      <span id="currentGameTitle">Progresso</span>
+      <span>Targhe Trovate</span>
       <span id="totalText">0 / 1000 (0.0%)</span>
     </div>
     <div class="progress-bar-bg">
@@ -301,34 +393,38 @@
     </div>
   </div>
 
-  <!-- Griglia Centinaia -->
+  <!-- Contenitore Centinaia -->
   <div class="hundreds-container" id="hundredsContainer"></div>
 
-  <!-- Azioni Partita -->
-  <div class="danger-actions">
-    <button class="btn-danger" id="btnResetCurrent">Azzera Partita</button>
-    <button class="btn-danger" id="btnDeleteCurrent">Elimina Partita</button>
-  </div>
-
   <script>
-    const STORAGE_GAMES = "car_plate_games_data";
-    const STORAGE_ACTIVE = "car_plate_active_game";
-
-    let games = JSON.parse(localStorage.getItem(STORAGE_GAMES)) || {
-      "Partita Principale": []
+    // ==========================================
+    // CONFIGURAZIONE FIREBASE CON LE TUE CHIAVI
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyAOrQRQ3A5_6-38JD8BdvRppk5msJ9ygU8",
+      authDomain: "caccia-alla-targa.firebaseapp.com",
+      databaseURL: "https://caccia-alla-targa-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "caccia-alla-targa",
+      storageBucket: "caccia-alla-targa.firebasestorage.app",
+      messagingSenderId: "144747793446",
+      appId: "1:144747793446:web:fb5bd9e73f0fc43b056ae7",
+      measurementId: "G-7NMJEFPYWV"
     };
-    let activeGame = localStorage.getItem(STORAGE_ACTIVE) || Object.keys(games)[0];
 
-    function save() {
-      localStorage.setItem(STORAGE_GAMES, JSON.stringify(games));
-      localStorage.setItem(STORAGE_ACTIVE, activeGame);
-      updateUI();
-    }
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Stato locale della sessione
+    let currentRoom = "";
+    let currentPlayer = "";
+    let currentMode = "coop";
+    let roomPlates = {};
 
     function pad(n) {
       return n.toString().padStart(3, "0");
     }
 
+    // Costruzione delle 10 centinaia
     const container = document.getElementById("hundredsContainer");
     for (let h = 0; h < 10; h++) {
       const start = h * 100;
@@ -352,36 +448,83 @@
         item.className = "number-badge";
         item.id = `num-${i}`;
         item.textContent = pad(i);
-        item.addEventListener("click", () => toggleNumber(i));
+        item.addEventListener("click", () => togglePlate(i));
         grid.appendChild(item);
       }
     }
 
-    function toggleNumber(n) {
-      const list = games[activeGame] || [];
-      const idx = list.indexOf(n);
-      if (idx > -1) {
-        list.splice(idx, 1);
-      } else {
-        list.push(n);
+    // Accesso alla stanza
+    document.getElementById("btnJoin").addEventListener("click", () => {
+      const name = document.getElementById("playerNameInput").value.trim();
+      let room = document.getElementById("roomIdInput").value.trim().toUpperCase();
+      const mode = document.getElementById("gameModeInput").value;
+
+      if (!name || !room) {
+        alert("Inserisci sia il nome che il codice stanza!");
+        return;
       }
-      games[activeGame] = list;
-      save();
+
+      currentPlayer = name;
+      currentRoom = room.replace(/[^A-Z0-9_-]/g, "");
+
+      const roomRef = db.ref(`rooms/${currentRoom}`);
+      roomRef.child("meta").once("value", (snap) => {
+        const meta = snap.val();
+        if (meta && meta.mode) {
+          currentMode = meta.mode;
+        } else {
+          currentMode = mode;
+          roomRef.child("meta").set({ mode: currentMode, created: Date.now() });
+        }
+
+        document.getElementById("displayRoom").textContent = currentRoom;
+        document.getElementById("displayMode").textContent = currentMode === "coop" ? "Coop 🤝" : "Gara ⚔️";
+        if (currentMode === "vs") {
+          document.getElementById("leaderboardCard").style.display = "block";
+        }
+
+        document.getElementById("lobbyModal").style.display = "none";
+        listenToRoomChanges();
+      });
+    });
+
+    // Ascolto Firebase in tempo reale
+    function listenToRoomChanges() {
+      db.ref(`rooms/${currentRoom}/plates`).on("value", (snapshot) => {
+        roomPlates = snapshot.val() || {};
+        updateUI();
+      });
+    }
+
+    function togglePlate(num) {
+      const padNum = pad(num);
+      const plateRef = db.ref(`rooms/${currentRoom}/plates/${padNum}`);
+
+      if (roomPlates[padNum]) {
+        // Se già registrata: rimozione permessa solo se in coop o se aggiunta dallo stesso giocatore
+        if (currentMode === "coop" || roomPlates[padNum].foundBy === currentPlayer) {
+          plateRef.remove();
+        } else {
+          alert(`Targa già presa da ${roomPlates[padNum].foundBy}!`);
+        }
+      } else {
+        plateRef.set({
+          foundBy: currentPlayer,
+          timestamp: Date.now()
+        });
+      }
     }
 
     function addPlate() {
       const input = document.getElementById("plateInput");
       const val = parseInt(input.value, 10);
+
       if (isNaN(val) || val < 0 || val > 999) {
-        alert("Inserisci un numero valido da 0 a 999");
+        alert("Inserisci un numero da 0 a 999");
         return;
       }
 
-      if (!games[activeGame].includes(val)) {
-        games[activeGame].push(val);
-        save();
-      }
-
+      togglePlate(val);
       const h = Math.floor(val / 100);
       document.getElementById(`hundred-${h}`).classList.add("open");
       input.value = "";
@@ -393,67 +536,22 @@
       if (e.key === "Enter") addPlate();
     });
 
-    const selector = document.getElementById("gameSelector");
-    function renderGameSelector() {
-      selector.innerHTML = "";
-      Object.keys(games).forEach(name => {
-        const opt = document.createElement("option");
-        opt.value = name;
-        opt.textContent = name;
-        if (name === activeGame) opt.selected = true;
-        selector.appendChild(opt);
-      });
-    }
-
-    selector.addEventListener("change", (e) => {
-      activeGame = e.target.value;
-      save();
-    });
-
-    document.getElementById("btnNewGame").addEventListener("click", () => {
-      const name = prompt("Nome della nuova partita (es: Viaggio al Mare):");
-      if (name && name.trim()) {
-        const trimmed = name.trim();
-        if (games[trimmed]) {
-          alert("Esiste già una partita con questo nome!");
-          return;
-        }
-        games[trimmed] = [];
-        activeGame = trimmed;
-        renderGameSelector();
-        save();
-      }
-    });
-
-    document.getElementById("btnResetCurrent").addEventListener("click", () => {
-      if (confirm(`Vuoi azzerare i progressi di '${activeGame}'?`)) {
-        games[activeGame] = [];
-        save();
-      }
-    });
-
-    document.getElementById("btnDeleteCurrent").addEventListener("click", () => {
-      if (Object.keys(games).length <= 1) {
-        alert("Non puoi eliminare l'unica partita rimasta!");
-        return;
-      }
-      if (confirm(`Confermi l'eliminazione di '${activeGame}'?`)) {
-        delete games[activeGame];
-        activeGame = Object.keys(games)[0];
-        renderGameSelector();
-        save();
-      }
-    });
-
+    // Aggiornamento grafico
     function updateUI() {
-      const currentList = new Set(games[activeGame] || []);
+      const scores = {};
 
       for (let i = 0; i < 1000; i++) {
+        const padNum = pad(i);
         const el = document.getElementById(`num-${i}`);
-        if (currentList.has(i)) {
+        const found = roomPlates[padNum];
+
+        if (found) {
           el.classList.add("found");
+          el.title = `Trovata da: ${found.foundBy}`;
+          scores[found.foundBy] = (scores[found.foundBy] || 0) + 1;
         } else {
           el.classList.remove("found");
+          el.title = "";
         }
       }
 
@@ -461,20 +559,36 @@
         let count = 0;
         const start = h * 100;
         for (let i = start; i < start + 100; i++) {
-          if (currentList.has(i)) count++;
+          if (roomPlates[pad(i)]) count++;
         }
         document.getElementById(`badge-${h}`).textContent = `${count}% (${count}/100)`;
       }
 
-      const total = currentList.size;
-      const pct = ((total / 1000) * 100).toFixed(1);
-      document.getElementById("totalText").textContent = `${total} / 1000 (${pct}%)`;
-      document.getElementById("totalFill").style.width = `${pct}%`;
-      document.getElementById("currentGameTitle").textContent = activeGame;
-    }
+      const totalCount = Object.keys(roomPlates).length;
+      const totalPct = ((totalCount / 1000) * 100).toFixed(1);
+      document.getElementById("totalText").textContent = `${totalCount} / 1000 (${totalPct}%)`;
+      document.getElementById("totalFill").style.width = `${totalPct}%`;
 
-    renderGameSelector();
-    updateUI();
+      if (currentMode === "vs") {
+        const listEl = document.getElementById("leaderboardList");
+        listEl.innerHTML = "";
+
+        const sortedPlayers = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+        if (sortedPlayers.length === 0) {
+          listEl.innerHTML = "<div style='color:var(--text-dim);font-size:0.85rem;'>Nessuna targa reclamata.</div>";
+        } else {
+          sortedPlayers.forEach(([pName, pScore], idx) => {
+            const row = document.createElement("div");
+            row.className = "player-row";
+            row.innerHTML = `
+              <span>${idx + 1}. <b>${pName}</b> ${pName === currentPlayer ? "(Tu)" : ""}</span>
+              <span><b>${pScore}</b> punti (${((pScore / 1000) * 100).toFixed(1)}%)</span>
+            `;
+            listEl.appendChild(row);
+          });
+        }
+      }
+    }
   </script>
 </body>
 </html>
