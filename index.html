@@ -461,13 +461,15 @@
         </div>
         <div class="field">
           <label>Modalità di Gioco</label>
-          <select id="newGameModeInput">
-            <option value="coop">🤝 Cooperazione</option>
-            <option value="vs">⚔️ Tutti contro Tutti</option>
+          <select id="newGameModeInput" onchange="onModeChange()">
+            <option value="coop">🤝 Cooperazione (Album unico condiviso)</option>
+            <option value="vs">⚔️ Tutti contro Tutti (Gara a punti)</option>
           </select>
         </div>
-        <div class="field">
-          <label>Regola Targhe Duplicate</label>
+        
+        <!-- Mostrato solo se si sceglie "Tutti contro Tutti" -->
+        <div class="field" id="ruleContainer" style="display: none;">
+          <label>Regola Targhe Duplicate (Solo in Sfida)</label>
           <select id="newGameRuleInput">
             <option value="exclusive">🔒 Targa Unica (il primo la blocca agli altri)</option>
             <option value="shared">👥 Tutti possono segnarla (Album individuali)</option>
@@ -518,7 +520,7 @@
     <button class="btn-small" onclick="location.reload()">Esci</button>
   </div>
 
-  <!-- Classifica (Visibile in modalità VS o se attiva la regola condivisa con più giocatori) -->
+  <!-- Classifica (Visibile in modalità VS) -->
   <div id="leaderboardCard">
     <div class="leaderboard-title">🏆 Classifica Giocatori</div>
     <div id="leaderboardList"></div>
@@ -589,6 +591,17 @@
       document.getElementById("viewCreate").style.display = tab === "create" ? "block" : "none";
     }
 
+    // Mostra/Nasconde l'opzione "Regola Targhe Duplicate" in base alla modalità scelta
+    function onModeChange() {
+      const mode = document.getElementById("newGameModeInput").value;
+      const ruleContainer = document.getElementById("ruleContainer");
+      if (mode === "vs") {
+        ruleContainer.style.display = "block";
+      } else {
+        ruleContainer.style.display = "none";
+      }
+    }
+
     // Ascolto stanze disponibili
     db.ref("rooms").on("value", (snapshot) => {
       allRoomsCache = snapshot.val() || {};
@@ -613,8 +626,9 @@
       roomKeys.forEach((key) => {
         const roomData = allRoomsCache[key] || {};
         const meta = roomData.meta || {};
-        const modeLabel = meta.mode === "vs" ? "⚔️ Gara" : "🤝 Coop";
-        const ruleLabel = meta.rule === "shared" ? "👥 Condivisa" : "🔒 Esclusiva";
+        const isVs = meta.mode === "vs";
+        const modeLabel = isVs ? "⚔️ Gara" : "🤝 Coop";
+        const ruleLabel = isVs ? (meta.rule === "shared" ? "👥 Libera" : "🔒 Esclusiva") : "";
         const count = roomData.plates ? Object.keys(roomData.plates).length : 0;
 
         const item = document.createElement("div");
@@ -624,7 +638,7 @@
             <div class="room-item-name">${key}</div>
             <div class="room-item-info">
               <span class="room-badge">${modeLabel}</span>
-              <span class="room-badge" style="color:#a78bfa; background:rgba(167,139,250,0.1);">${ruleLabel}</span>
+              ${ruleLabel ? `<span class="room-badge" style="color:#a78bfa; background:rgba(167,139,250,0.1);">${ruleLabel}</span>` : ""}
               <span>${count} registrate</span>
             </div>
           </div>
@@ -676,13 +690,13 @@
       currentPlayer = name;
       currentRoom = roomKey;
       currentMode = mode;
-      currentRule = rule;
+      currentRule = mode === "coop" ? "exclusive" : rule;
 
-      const modeText = (currentMode === "vs" ? "Gara ⚔️" : "Coop 🤝") + (currentRule === "shared" ? " (Libera)" : " (Blocco)");
+      const modeText = (currentMode === "vs" ? "Gara ⚔️" : "Coop 🤝") + (currentMode === "vs" ? (currentRule === "shared" ? " (Libera)" : " (Blocco)") : "");
       document.getElementById("displayRoom").textContent = currentRoom;
       document.getElementById("displayMode").textContent = modeText;
 
-      if (currentMode === "vs" || currentRule === "shared") {
+      if (currentMode === "vs") {
         document.getElementById("leaderboardCard").style.display = "block";
       }
 
@@ -695,7 +709,8 @@
       const name = document.getElementById("playerNameInput").value.trim();
       let room = document.getElementById("newRoomIdInput").value.trim().toUpperCase();
       const mode = document.getElementById("newGameModeInput").value;
-      const rule = document.getElementById("newGameRuleInput").value;
+      // Se è Coop la regola di default è l'album unico condiviso (exclusive)
+      const rule = mode === "vs" ? document.getElementById("newGameRuleInput").value : "exclusive";
 
       if (!name) {
         alert("Inserisci prima il tuo nome!");
@@ -728,14 +743,14 @@
       });
     }
 
-    // Toggle Targa con gestione delle regole (Esclusiva vs Condivisa)
+    // Toggle Targa con gestione delle regole
     function togglePlate(num) {
       const padNum = pad(num);
       const plateRef = db.ref(`rooms/${currentRoom}/plates/${padNum}`);
       const plateData = roomPlates[padNum];
 
-      if (currentRule === "exclusive") {
-        // Regola 1: Chi prima arriva blocca la targa
+      if (currentMode === "coop" || currentRule === "exclusive") {
+        // Targa bloccata / album unico cooperativo
         if (plateData) {
           if (currentMode === "coop" || plateData.foundBy === currentPlayer) {
             plateRef.remove();
@@ -749,14 +764,12 @@
           });
         }
       } else {
-        // Regola 2: Condivisa (Tutti possono segnarla)
-        // La struttura dati salva una mappa di giocatori: { players: { "Marco": true, "Giulia": true } }
+        // Tutti contro tutti con targhe libere (album individuali)
         const userPlateRef = db.ref(`rooms/${currentRoom}/plates/${padNum}/players/${currentPlayer}`);
         const alreadyFoundByMe = plateData && plateData.players && plateData.players[currentPlayer];
 
         if (alreadyFoundByMe) {
           userPlateRef.remove().then(() => {
-            // Se nessun altro giocatore l'ha presa, rimuove la targa intera
             plateRef.once("value", (snap) => {
               const val = snap.val();
               if (val && (!val.players || Object.keys(val.players).length === 0)) {
@@ -803,14 +816,13 @@
 
         let isMarkedByMe = false;
 
-        if (currentRule === "exclusive") {
+        if (currentMode === "coop" || currentRule === "exclusive") {
           if (data) {
             isMarkedByMe = true;
             el.title = `Trovata da: ${data.foundBy}`;
             scores[data.foundBy] = (scores[data.foundBy] || 0) + 1;
           }
         } else {
-          // Regola condivisa
           if (data && data.players) {
             Object.keys(data.players).forEach(p => {
               scores[p] = (scores[p] || 0) + 1;
@@ -831,14 +843,14 @@
         }
       }
 
-      // Percentuali per centinaio (basate sulla visualizzazione dell'utente)
+      // Percentuali per centinaio
       for (let h = 0; h < 10; h++) {
         let count = 0;
         const start = h * 100;
         for (let i = start; i < start + 100; i++) {
           const padNum = pad(i);
           const data = roomPlates[padNum];
-          if (currentRule === "exclusive") {
+          if (currentMode === "coop" || currentRule === "exclusive") {
             if (data) count++;
           } else {
             if (data && data.players && data.players[currentPlayer]) count++;
@@ -848,14 +860,14 @@
       }
 
       // Totale
-      const displayTotal = currentRule === "exclusive" ? Object.keys(roomPlates).length : myTotalCount;
+      const displayTotal = (currentMode === "coop" || currentRule === "exclusive") ? Object.keys(roomPlates).length : myTotalCount;
       const totalPct = ((displayTotal / 1000) * 100).toFixed(1);
       document.getElementById("totalText").textContent = `${displayTotal} / 1000 (${totalPct}%)`;
       document.getElementById("totalFill").style.width = `${totalPct}%`;
-      document.getElementById("totalHeaderLabel").textContent = currentRule === "exclusive" ? "Targhe Trovate (Album)" : "Tuo Completamento";
+      document.getElementById("totalHeaderLabel").textContent = (currentMode === "coop" || currentRule === "exclusive") ? "Targhe Trovate (Album)" : "Tuo Completamento";
 
       // Classifica giocatori
-      if (currentMode === "vs" || currentRule === "shared") {
+      if (currentMode === "vs") {
         const listEl = document.getElementById("leaderboardList");
         listEl.innerHTML = "";
 
