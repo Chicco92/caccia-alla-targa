@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Caccia alla Targa (000 - 999)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.3);
+      --found: #10b981;
+      --text: #f8fafc;
+      --text-dim: #94a3b8;
+      --border: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 600px;
+      padding: 20px 16px 10px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    /* Gestore Partite */
+    .game-manager {
+      width: calc(100% - 32px);
+      max-width: 568px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .game-select-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    select {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: var(--text);
+      border: none;
+      padding: 0 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Inserimento Targa */
+    .input-card {
+      width: calc(100% - 32px);
+      max-width: 568px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .plate-input-wrapper {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="number"] {
+      flex: 1;
+      background: #0f172a;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 8px;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    button.btn-add {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 0 22px;
+      cursor: pointer;
+    }
+
+    /* Statistica Totale */
+    .total-card {
+      width: calc(100% - 32px);
+      max-width: 568px;
+      background: linear-gradient(135deg, #1e293b, #1e1b4b);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+    }
+
+    .total-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar-bg {
+      background: rgba(255, 255, 255, 0.1);
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      background: var(--found);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Centinaia */
+    .hundreds-container {
+      width: calc(100% - 32px);
+      max-width: 568px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .hundred-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .hundred-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      cursor: pointer;
+    }
+
+    .hundred-title {
+      font-weight: 700;
+    }
+
+    .hundred-badge {
+      background: #0f172a;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .numbers-grid {
+      display: none;
+      grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+      gap: 6px;
+      padding: 12px;
+      background: rgba(15, 23, 42, 0.4);
+      border-top: 1px solid var(--border);
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .hundred-card.open .numbers-grid {
+      display: grid;
+    }
+
+    .number-badge {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 8px;
+      padding: 8px 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .number-badge.found {
+      background: var(--found);
+      color: #0f172a;
+      border-color: var(--found);
+      font-weight: 700;
+    }
+
+    .danger-actions {
+      margin-top: 25px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-danger {
+      background: transparent;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🚗 Caccia alla Targa</h1>
+  </header>
+
+  <!-- Selezione e Creazione Partite -->
+  <div class="game-manager">
+    <div style="font-size: 0.85rem; color: var(--text-dim);">Partita Attiva:</div>
+    <div class="game-select-row">
+      <select id="gameSelector"></select>
+      <button class="btn-secondary" id="btnNewGame">+ Nuova</button>
+    </div>
+  </div>
+
+  <!-- Input Targa -->
+  <div class="input-card">
+    <div class="plate-input-wrapper">
+      <input 
+        type="number" 
+        id="plateInput" 
+        placeholder="Es: 42 o 042" 
+        inputmode="numeric" 
+        min="0" 
+        max="999"
+        autocomplete="off"
+      />
+      <button class="btn-add" id="btnAdd">Visto!</button>
+    </div>
+  </div>
+
+  <!-- Totale -->
+  <div class="total-card">
+    <div class="total-header">
+      <span id="currentGameTitle">Progresso</span>
+      <span id="totalText">0 / 1000 (0.0%)</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="totalFill"></div>
+    </div>
+  </div>
+
+  <!-- Griglia Centinaia -->
+  <div class="hundreds-container" id="hundredsContainer"></div>
+
+  <!-- Azioni Partita -->
+  <div class="danger-actions">
+    <button class="btn-danger" id="btnResetCurrent">Azzera Partita</button>
+    <button class="btn-danger" id="btnDeleteCurrent">Elimina Partita</button>
+  </div>
+
+  <script>
+    const STORAGE_GAMES = "car_plate_games_data";
+    const STORAGE_ACTIVE = "car_plate_active_game";
+
+    let games = JSON.parse(localStorage.getItem(STORAGE_GAMES)) || {
+      "Partita Principale": []
+    };
+    let activeGame = localStorage.getItem(STORAGE_ACTIVE) || Object.keys(games)[0];
+
+    function save() {
+      localStorage.setItem(STORAGE_GAMES, JSON.stringify(games));
+      localStorage.setItem(STORAGE_ACTIVE, activeGame);
+      updateUI();
+    }
+
+    function pad(n) {
+      return n.toString().padStart(3, "0");
+    }
+
+    const container = document.getElementById("hundredsContainer");
+    for (let h = 0; h < 10; h++) {
+      const start = h * 100;
+      const end = start + 99;
+
+      const card = document.createElement("div");
+      card.className = "hundred-card";
+      card.id = `hundred-${h}`;
+      card.innerHTML = `
+        <div class="hundred-header" onclick="document.getElementById('hundred-${h}').classList.toggle('open')">
+          <span class="hundred-title">${pad(start)} - ${pad(end)}</span>
+          <span class="hundred-badge" id="badge-${h}">0% (0)</span>
+        </div>
+        <div class="numbers-grid" id="grid-${h}"></div>
+      `;
+      container.appendChild(card);
+
+      const grid = card.querySelector(`#grid-${h}`);
+      for (let i = start; i <= end; i++) {
+        const item = document.createElement("div");
+        item.className = "number-badge";
+        item.id = `num-${i}`;
+        item.textContent = pad(i);
+        item.addEventListener("click", () => toggleNumber(i));
+        grid.appendChild(item);
+      }
+    }
+
+    function toggleNumber(n) {
+      const list = games[activeGame] || [];
+      const idx = list.indexOf(n);
+      if (idx > -1) {
+        list.splice(idx, 1);
+      } else {
+        list.push(n);
+      }
+      games[activeGame] = list;
+      save();
+    }
+
+    function addPlate() {
+      const input = document.getElementById("plateInput");
+      const val = parseInt(input.value, 10);
+      if (isNaN(val) || val < 0 || val > 999) {
+        alert("Inserisci un numero valido da 0 a 999");
+        return;
+      }
+
+      if (!games[activeGame].includes(val)) {
+        games[activeGame].push(val);
+        save();
+      }
+
+      const h = Math.floor(val / 100);
+      document.getElementById(`hundred-${h}`).classList.add("open");
+      input.value = "";
+      input.focus();
+    }
+
+    document.getElementById("btnAdd").addEventListener("click", addPlate);
+    document.getElementById("plateInput").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") addPlate();
+    });
+
+    const selector = document.getElementById("gameSelector");
+    function renderGameSelector() {
+      selector.innerHTML = "";
+      Object.keys(games).forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        if (name === activeGame) opt.selected = true;
+        selector.appendChild(opt);
+      });
+    }
+
+    selector.addEventListener("change", (e) => {
+      activeGame = e.target.value;
+      save();
+    });
+
+    document.getElementById("btnNewGame").addEventListener("click", () => {
+      const name = prompt("Nome della nuova partita (es: Viaggio al Mare):");
+      if (name && name.trim()) {
+        const trimmed = name.trim();
+        if (games[trimmed]) {
+          alert("Esiste già una partita con questo nome!");
+          return;
+        }
+        games[trimmed] = [];
+        activeGame = trimmed;
+        renderGameSelector();
+        save();
+      }
+    });
+
+    document.getElementById("btnResetCurrent").addEventListener("click", () => {
+      if (confirm(`Vuoi azzerare i progressi di '${activeGame}'?`)) {
+        games[activeGame] = [];
+        save();
+      }
+    });
+
+    document.getElementById("btnDeleteCurrent").addEventListener("click", () => {
+      if (Object.keys(games).length <= 1) {
+        alert("Non puoi eliminare l'unica partita rimasta!");
+        return;
+      }
+      if (confirm(`Confermi l'eliminazione di '${activeGame}'?`)) {
+        delete games[activeGame];
+        activeGame = Object.keys(games)[0];
+        renderGameSelector();
+        save();
+      }
+    });
+
+    function updateUI() {
+      const currentList = new Set(games[activeGame] || []);
+
+      for (let i = 0; i < 1000; i++) {
+        const el = document.getElementById(`num-${i}`);
+        if (currentList.has(i)) {
+          el.classList.add("found");
+        } else {
+          el.classList.remove("found");
+        }
+      }
+
+      for (let h = 0; h < 10; h++) {
+        let count = 0;
+        const start = h * 100;
+        for (let i = start; i < start + 100; i++) {
+          if (currentList.has(i)) count++;
+        }
+        document.getElementById(`badge-${h}`).textContent = `${count}% (${count}/100)`;
+      }
+
+      const total = currentList.size;
+      const pct = ((total / 1000) * 100).toFixed(1);
+      document.getElementById("totalText").textContent = `${total} / 1000 (${pct}%)`;
+      document.getElementById("totalFill").style.width = `${pct}%`;
+      document.getElementById("currentGameTitle").textContent = activeGame;
+    }
+
+    renderGameSelector();
+    updateUI();
+  </script>
+</body>
+</html>
