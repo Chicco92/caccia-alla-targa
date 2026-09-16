@@ -19,6 +19,7 @@
       --text: #f8fafc;
       --text-dim: #94a3b8;
       --border: #334155;
+      --danger: #ef4444;
     }
 
     * {
@@ -80,11 +81,11 @@
       cursor: pointer;
     }
 
-    /* Modal Lobby Iniziale */
-    #lobbyModal {
+    /* Modal Lobby */
+    #lobbyModal, #adminModal {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.95);
+      background: rgba(15, 23, 42, 0.96);
       backdrop-filter: blur(8px);
       z-index: 1000;
       display: flex;
@@ -123,7 +124,7 @@
       text-transform: uppercase;
     }
 
-    input[type="text"], select {
+    input[type="text"], input[type="password"], select {
       width: 100%;
       background: #0f172a;
       border: 1px solid var(--border);
@@ -134,7 +135,6 @@
       outline: none;
     }
 
-    /* Tab per scegliere tra Entra e Crea */
     .tab-buttons {
       display: flex;
       gap: 6px;
@@ -154,16 +154,13 @@
       font-weight: 600;
       font-size: 0.9rem;
       cursor: pointer;
-      transition: all 0.2s;
     }
 
     .tab-btn.active {
       background: var(--card-bg);
       color: var(--accent);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
-    /* Lista Partite Aperte */
     .existing-rooms-list {
       display: flex;
       flex-direction: column;
@@ -182,26 +179,24 @@
       border-radius: 10px;
       padding: 12px 14px;
       cursor: pointer;
-      transition: border-color 0.2s, transform 0.1s;
     }
 
     .room-item:hover {
       border-color: var(--accent);
-      transform: translateY(-1px);
     }
 
     .room-item-name {
       font-weight: 700;
       font-size: 0.95rem;
-      color: var(--text);
     }
 
     .room-item-info {
       font-size: 0.8rem;
       color: var(--text-dim);
       display: flex;
-      gap: 8px;
-      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      flex-wrap: wrap;
     }
 
     .room-badge {
@@ -226,7 +221,20 @@
       margin-top: 6px;
     }
 
-    /* Leaderboard Sfida */
+    .admin-link-btn {
+      margin-top: 14px;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      text-decoration: underline;
+      cursor: pointer;
+      display: block;
+      width: 100%;
+      text-align: center;
+    }
+
+    /* Classifica Leaderboard */
     #leaderboardCard {
       display: none;
       width: 100%;
@@ -333,7 +341,7 @@
       transition: width 0.3s ease;
     }
 
-    /* Griglie Centinaia */
+    /* Centinaia */
     .hundreds-container {
       width: 100%;
       max-width: 580px;
@@ -403,54 +411,100 @@
       border-color: var(--found);
       font-weight: 700;
     }
+
+    .btn-delete-room {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Modal Lobby Iniziale -->
+  <!-- Modal Accesso / Scelta Partita -->
   <div id="lobbyModal">
     <div class="modal-box">
       <h2>🚗 Unisciti alla Partita</h2>
 
       <div class="field">
-        <label>Tuo Nome</label>
+        <label>Tuo Nome Giocatore</label>
         <input type="text" id="playerNameInput" placeholder="Es: Marco" />
       </div>
 
-      <!-- Tab Selettore: Scegli esistente / Crea nuova -->
       <div class="tab-buttons">
         <button class="tab-btn active" id="tabJoin" onclick="switchTab('join')">Partite Attive</button>
         <button class="tab-btn" id="tabCreate" onclick="switchTab('create')">+ Nuova Partita</button>
       </div>
 
-      <!-- Vista 1: Scegli partita avviata -->
+      <!-- Vista: Entra in una partita esistente -->
       <div id="viewJoin">
         <div class="field">
-          <label>Seleziona una Partita Aperta</label>
+          <label>Seleziona una Partita</label>
           <div class="existing-rooms-list" id="roomsList">
             <div style="color: var(--text-dim); font-size: 0.85rem; text-align: center; padding: 12px;">
-              Caricamento partite in corso...
+              Caricamento partite...
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Vista 2: Crea nuova partita -->
+      <!-- Vista: Crea nuova partita -->
       <div id="viewCreate" style="display: none;">
         <div class="field">
-          <label>Codice o Nome Partita</label>
+          <label>Nome o Codice Partita</label>
           <input type="text" id="newRoomIdInput" placeholder="Es: VIAGGIO-MARE" style="text-transform: uppercase;" />
         </div>
         <div class="field">
           <label>Modalità di Gioco</label>
           <select id="newGameModeInput">
-            <option value="coop">🤝 Collaborazione (Stesso album insieme)</option>
-            <option value="vs">⚔️ Tutti contro Tutti (Gara a punti)</option>
+            <option value="coop">🤝 Cooperazione</option>
+            <option value="vs">⚔️ Tutti contro Tutti</option>
           </select>
         </div>
-        <button class="btn-primary" id="btnCreateRoom">Crea e Avvia</button>
+        <div class="field">
+          <label>Regola Targhe Duplicate</label>
+          <select id="newGameRuleInput">
+            <option value="exclusive">🔒 Targa Unica (il primo la blocca agli altri)</option>
+            <option value="shared">👥 Tutti possono segnarla (Album individuali)</option>
+          </select>
+        </div>
+        <button class="btn-primary" id="btnCreateRoom">Crea e Inizia</button>
       </div>
 
+      <button class="admin-link-btn" onclick="openAdminModal()">⚙️ Area Gestore Admin</button>
+    </div>
+  </div>
+
+  <!-- Modal Admin Gestore -->
+  <div id="adminModal" style="display: none;">
+    <div class="modal-box">
+      <h2>⚙️ Pannello Gestore</h2>
+      
+      <!-- Login Admin -->
+      <div id="adminLoginView">
+        <div class="field">
+          <label>Username</label>
+          <input type="text" id="adminUser" placeholder="Username" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="adminPass" placeholder="Password" />
+        </div>
+        <button class="btn-primary" onclick="checkAdminLogin()">Accedi</button>
+        <button class="btn-small" style="width:100%; margin-top: 8px; background: transparent;" onclick="closeAdminModal()">Chiudi</button>
+      </div>
+
+      <!-- Elenco Eliminazione Partite (dopo login) -->
+      <div id="adminDashboardView" style="display: none;">
+        <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:12px;">Elimina definitivamente una stanza dal cloud:</p>
+        <div class="existing-rooms-list" id="adminRoomsList"></div>
+        <button class="btn-small" style="width:100%; margin-top: 12px; background: #334155;" onclick="closeAdminModal()">Esci dal Pannello</button>
+      </div>
     </div>
   </div>
 
@@ -461,16 +515,16 @@
   <!-- Barra Info Partita Attiva -->
   <div class="room-bar">
     <span>Stanza: <b id="displayRoom">--</b> (<span id="displayMode">--</span>)</span>
-    <button class="btn-small" onclick="location.reload()">Cambia</button>
+    <button class="btn-small" onclick="location.reload()">Esci</button>
   </div>
 
-  <!-- Classifica (Visibile solo in modalità VS) -->
+  <!-- Classifica (Visibile in modalità VS o se attiva la regola condivisa con più giocatori) -->
   <div id="leaderboardCard">
     <div class="leaderboard-title">🏆 Classifica Giocatori</div>
     <div id="leaderboardList"></div>
   </div>
 
-  <!-- Inserimento rapido -->
+  <!-- Input Targa -->
   <div class="input-card">
     <div class="plate-input-wrapper">
       <input 
@@ -486,10 +540,10 @@
     </div>
   </div>
 
-  <!-- Totale Targhe Trovate -->
+  <!-- Statistiche Totali -->
   <div class="total-card">
     <div class="total-header">
-      <span>Targhe Trovate</span>
+      <span id="totalHeaderLabel">Targhe Trovate</span>
       <span id="totalText">0 / 1000 (0.0%)</span>
     </div>
     <div class="progress-bar-bg">
@@ -497,11 +551,11 @@
     </div>
   </div>
 
-  <!-- Contenitore Centinaia -->
+  <!-- Griglia Centinaia -->
   <div class="hundreds-container" id="hundredsContainer"></div>
 
   <script>
-    // Inizializzazione Firebase
+    // Configurazione Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyAOrQRQ3A5_6-38JD8BdvRppk5msJ9ygU8",
       authDomain: "caccia-alla-targa.firebaseapp.com",
@@ -519,14 +573,15 @@
     // Stato locale della sessione
     let currentRoom = "";
     let currentPlayer = "";
-    let currentMode = "coop";
+    let currentMode = "coop";      // 'coop' o 'vs'
+    let currentRule = "exclusive"; // 'exclusive' o 'shared'
     let roomPlates = {};
+    let allRoomsCache = {};
 
     function pad(n) {
       return n.toString().padStart(3, "0");
     }
 
-    // Gestione Tab (Entra / Crea)
     function switchTab(tab) {
       document.getElementById("tabJoin").classList.toggle("active", tab === "join");
       document.getElementById("tabCreate").classList.toggle("active", tab === "create");
@@ -534,11 +589,16 @@
       document.getElementById("viewCreate").style.display = tab === "create" ? "block" : "none";
     }
 
-    // Carica in tempo reale l'elenco delle stanze attive
+    // Ascolto stanze disponibili
     db.ref("rooms").on("value", (snapshot) => {
+      allRoomsCache = snapshot.val() || {};
+      renderRoomsList();
+      renderAdminRoomsList();
+    });
+
+    function renderRoomsList() {
       const listEl = document.getElementById("roomsList");
-      const rooms = snapshot.val() || {};
-      const roomKeys = Object.keys(rooms);
+      const roomKeys = Object.keys(allRoomsCache);
 
       if (roomKeys.length === 0) {
         listEl.innerHTML = `
@@ -551,9 +611,10 @@
 
       listEl.innerHTML = "";
       roomKeys.forEach((key) => {
-        const roomData = rooms[key] || {};
+        const roomData = allRoomsCache[key] || {};
         const meta = roomData.meta || {};
-        const mode = meta.mode === "vs" ? "⚔️ Gara" : "🤝 Coop";
+        const modeLabel = meta.mode === "vs" ? "⚔️ Gara" : "🤝 Coop";
+        const ruleLabel = meta.rule === "shared" ? "👥 Condivisa" : "🔒 Esclusiva";
         const count = roomData.plates ? Object.keys(roomData.plates).length : 0;
 
         const item = document.createElement("div");
@@ -562,16 +623,17 @@
           <div>
             <div class="room-item-name">${key}</div>
             <div class="room-item-info">
-              <span class="room-badge">${mode}</span>
-              <span>${count}/1000 completate</span>
+              <span class="room-badge">${modeLabel}</span>
+              <span class="room-badge" style="color:#a78bfa; background:rgba(167,139,250,0.1);">${ruleLabel}</span>
+              <span>${count} registrate</span>
             </div>
           </div>
           <span style="color: var(--accent); font-weight: 700;">Entra &rarr;</span>
         `;
-        item.onclick = () => joinRoom(key, meta.mode || "coop");
+        item.onclick = () => joinRoom(key, meta.mode || "coop", meta.rule || "exclusive");
         listEl.appendChild(item);
       });
-    });
+    }
 
     // Costruzione delle 10 centinaia
     const container = document.getElementById("hundredsContainer");
@@ -602,8 +664,8 @@
       }
     }
 
-    // Entra in una stanza specifica
-    function joinRoom(roomKey, mode) {
+    // Entra in una stanza
+    function joinRoom(roomKey, mode, rule) {
       const name = document.getElementById("playerNameInput").value.trim();
       if (!name) {
         alert("Inserisci prima il tuo Nome in cima!");
@@ -614,10 +676,13 @@
       currentPlayer = name;
       currentRoom = roomKey;
       currentMode = mode;
+      currentRule = rule;
 
+      const modeText = (currentMode === "vs" ? "Gara ⚔️" : "Coop 🤝") + (currentRule === "shared" ? " (Libera)" : " (Blocco)");
       document.getElementById("displayRoom").textContent = currentRoom;
-      document.getElementById("displayMode").textContent = currentMode === "coop" ? "Coop 🤝" : "Gara ⚔️";
-      if (currentMode === "vs") {
+      document.getElementById("displayMode").textContent = modeText;
+
+      if (currentMode === "vs" || currentRule === "shared") {
         document.getElementById("leaderboardCard").style.display = "block";
       }
 
@@ -625,11 +690,12 @@
       listenToRoomChanges();
     }
 
-    // Creazione nuova stanza
+    // Crea una stanza
     document.getElementById("btnCreateRoom").addEventListener("click", () => {
       const name = document.getElementById("playerNameInput").value.trim();
       let room = document.getElementById("newRoomIdInput").value.trim().toUpperCase();
       const mode = document.getElementById("newGameModeInput").value;
+      const rule = document.getElementById("newGameRuleInput").value;
 
       if (!name) {
         alert("Inserisci prima il tuo nome!");
@@ -643,14 +709,18 @@
       const cleanRoom = room.replace(/[^A-Z0-9_-]/g, "");
       const roomRef = db.ref(`rooms/${cleanRoom}`);
 
-      roomRef.child("meta").set({ mode: mode, created: Date.now() }, (err) => {
+      roomRef.child("meta").set({ 
+        mode: mode, 
+        rule: rule, 
+        created: Date.now() 
+      }, (err) => {
         if (!err) {
-          joinRoom(cleanRoom, mode);
+          joinRoom(cleanRoom, mode, rule);
         }
       });
     });
 
-    // Ascolto Firebase in tempo reale per le targhe della stanza
+    // Ascolto modifiche in tempo reale delle targhe
     function listenToRoomChanges() {
       db.ref(`rooms/${currentRoom}/plates`).on("value", (snapshot) => {
         roomPlates = snapshot.val() || {};
@@ -658,21 +728,45 @@
       });
     }
 
+    // Toggle Targa con gestione delle regole (Esclusiva vs Condivisa)
     function togglePlate(num) {
       const padNum = pad(num);
       const plateRef = db.ref(`rooms/${currentRoom}/plates/${padNum}`);
+      const plateData = roomPlates[padNum];
 
-      if (roomPlates[padNum]) {
-        if (currentMode === "coop" || roomPlates[padNum].foundBy === currentPlayer) {
-          plateRef.remove();
+      if (currentRule === "exclusive") {
+        // Regola 1: Chi prima arriva blocca la targa
+        if (plateData) {
+          if (currentMode === "coop" || plateData.foundBy === currentPlayer) {
+            plateRef.remove();
+          } else {
+            alert(`Targa già registrata da ${plateData.foundBy}!`);
+          }
         } else {
-          alert(`Targa già presa da ${roomPlates[padNum].foundBy}!`);
+          plateRef.set({
+            foundBy: currentPlayer,
+            timestamp: Date.now()
+          });
         }
       } else {
-        plateRef.set({
-          foundBy: currentPlayer,
-          timestamp: Date.now()
-        });
+        // Regola 2: Condivisa (Tutti possono segnarla)
+        // La struttura dati salva una mappa di giocatori: { players: { "Marco": true, "Giulia": true } }
+        const userPlateRef = db.ref(`rooms/${currentRoom}/plates/${padNum}/players/${currentPlayer}`);
+        const alreadyFoundByMe = plateData && plateData.players && plateData.players[currentPlayer];
+
+        if (alreadyFoundByMe) {
+          userPlateRef.remove().then(() => {
+            // Se nessun altro giocatore l'ha presa, rimuove la targa intera
+            plateRef.once("value", (snap) => {
+              const val = snap.val();
+              if (val && (!val.players || Object.keys(val.players).length === 0)) {
+                plateRef.remove();
+              }
+            });
+          });
+        } else {
+          userPlateRef.set(true);
+        }
       }
     }
 
@@ -697,48 +791,79 @@
       if (e.key === "Enter") addPlate();
     });
 
-    // Aggiornamento interfaccia
+    // Aggiornamento grafico dell'interfaccia
     function updateUI() {
       const scores = {};
+      let myTotalCount = 0;
 
       for (let i = 0; i < 1000; i++) {
         const padNum = pad(i);
         const el = document.getElementById(`num-${i}`);
-        const found = roomPlates[padNum];
+        const data = roomPlates[padNum];
 
-        if (found) {
+        let isMarkedByMe = false;
+
+        if (currentRule === "exclusive") {
+          if (data) {
+            isMarkedByMe = true;
+            el.title = `Trovata da: ${data.foundBy}`;
+            scores[data.foundBy] = (scores[data.foundBy] || 0) + 1;
+          }
+        } else {
+          // Regola condivisa
+          if (data && data.players) {
+            Object.keys(data.players).forEach(p => {
+              scores[p] = (scores[p] || 0) + 1;
+            });
+            if (data.players[currentPlayer]) {
+              isMarkedByMe = true;
+            }
+            el.title = `Segnata da: ${Object.keys(data.players).join(", ")}`;
+          }
+        }
+
+        if (isMarkedByMe) {
           el.classList.add("found");
-          el.title = `Trovata da: ${found.foundBy}`;
-          scores[found.foundBy] = (scores[found.foundBy] || 0) + 1;
+          myTotalCount++;
         } else {
           el.classList.remove("found");
-          el.title = "";
+          if (!data) el.title = "";
         }
       }
 
+      // Percentuali per centinaio (basate sulla visualizzazione dell'utente)
       for (let h = 0; h < 10; h++) {
         let count = 0;
         const start = h * 100;
         for (let i = start; i < start + 100; i++) {
-          if (roomPlates[pad(i)]) count++;
+          const padNum = pad(i);
+          const data = roomPlates[padNum];
+          if (currentRule === "exclusive") {
+            if (data) count++;
+          } else {
+            if (data && data.players && data.players[currentPlayer]) count++;
+          }
         }
         document.getElementById(`badge-${h}`).textContent = `${count}% (${count}/100)`;
       }
 
-      const totalCount = Object.keys(roomPlates).length;
-      const totalPct = ((totalCount / 1000) * 100).toFixed(1);
-      document.getElementById("totalText").textContent = `${totalCount} / 1000 (${totalPct}%)`;
+      // Totale
+      const displayTotal = currentRule === "exclusive" ? Object.keys(roomPlates).length : myTotalCount;
+      const totalPct = ((displayTotal / 1000) * 100).toFixed(1);
+      document.getElementById("totalText").textContent = `${displayTotal} / 1000 (${totalPct}%)`;
       document.getElementById("totalFill").style.width = `${totalPct}%`;
+      document.getElementById("totalHeaderLabel").textContent = currentRule === "exclusive" ? "Targhe Trovate (Album)" : "Tuo Completamento";
 
-      if (currentMode === "vs") {
+      // Classifica giocatori
+      if (currentMode === "vs" || currentRule === "shared") {
         const listEl = document.getElementById("leaderboardList");
         listEl.innerHTML = "";
 
-        const sortedPlayers = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-        if (sortedPlayers.length === 0) {
+        const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+        if (sorted.length === 0) {
           listEl.innerHTML = "<div style='color:var(--text-dim);font-size:0.85rem;'>Nessuna targa reclamata.</div>";
         } else {
-          sortedPlayers.forEach(([pName, pScore], idx) => {
+          sorted.forEach(([pName, pScore], idx) => {
             const row = document.createElement("div");
             row.className = "player-row";
             row.innerHTML = `
@@ -748,6 +873,69 @@
             listEl.appendChild(row);
           });
         }
+      }
+    }
+
+    // ==========================================
+    // SEZIONE AMMINISTRATORE (Chicco / Saetta95)
+    // ==========================================
+    function openAdminModal() {
+      document.getElementById("adminModal").style.display = "flex";
+      document.getElementById("adminLoginView").style.display = "block";
+      document.getElementById("adminDashboardView").style.display = "none";
+      document.getElementById("adminUser").value = "";
+      document.getElementById("adminPass").value = "";
+    }
+
+    function closeAdminModal() {
+      document.getElementById("adminModal").style.display = "none";
+    }
+
+    function checkAdminLogin() {
+      const u = document.getElementById("adminUser").value.trim();
+      const p = document.getElementById("adminPass").value;
+
+      if (u === "Chicco" && p === "Saetta95") {
+        document.getElementById("adminLoginView").style.display = "none";
+        document.getElementById("adminDashboardView").style.display = "block";
+        renderAdminRoomsList();
+      } else {
+        alert("Credenziali errate!");
+      }
+    }
+
+    function renderAdminRoomsList() {
+      const container = document.getElementById("adminRoomsList");
+      if (!container) return;
+
+      const keys = Object.keys(allRoomsCache);
+      if (keys.length === 0) {
+        container.innerHTML = "<div style='color:var(--text-dim);font-size:0.85rem;text-align:center;'>Nessuna stanza presente.</div>";
+        return;
+      }
+
+      container.innerHTML = "";
+      keys.forEach((key) => {
+        const item = document.createElement("div");
+        item.className = "room-item";
+        item.innerHTML = `
+          <div>
+            <div class="room-item-name">${key}</div>
+            <div class="room-item-info">
+              <span>${allRoomsCache[key].plates ? Object.keys(allRoomsCache[key].plates).length : 0} targhe salvate</span>
+            </div>
+          </div>
+          <button class="btn-delete-room" onclick="deleteRoom('${key}')">Elimina</button>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function deleteRoom(roomKey) {
+      if (confirm(`Sei sicuro di voler eliminare la partita '${roomKey}' per tutti i giocatori?`)) {
+        db.ref(`rooms/${roomKey}`).remove().then(() => {
+          alert(`Partita '${roomKey}' eliminata con successo.`);
+        });
       }
     }
   </script>
