@@ -161,16 +161,16 @@
       color: var(--accent);
     }
 
-    .existing-rooms-list {
+    .existing-rooms-list, .existing-players-list {
       display: flex;
       flex-direction: column;
       gap: 8px;
       max-height: 220px;
       overflow-y: auto;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
-    .room-item {
+    .room-item, .player-pick-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -179,13 +179,14 @@
       border-radius: 10px;
       padding: 12px 14px;
       cursor: pointer;
+      transition: border-color 0.2s;
     }
 
-    .room-item:hover {
+    .room-item:hover, .player-pick-item:hover {
       border-color: var(--accent);
     }
 
-    .room-item-name {
+    .room-item-name, .player-pick-name {
       font-weight: 700;
       font-size: 0.95rem;
     }
@@ -426,59 +427,81 @@
 </head>
 <body>
 
-  <!-- Modal Accesso / Scelta Partita -->
+  <!-- Modal Accesso / Scelta Partita & Giocatore -->
   <div id="lobbyModal">
     <div class="modal-box">
-      <h2>🚗 Unisciti alla Partita</h2>
+      
+      <!-- FASE 1: Scelta o Creazione Stanza -->
+      <div id="stepRoomSelection">
+        <h2>🚗 Scegli la Partita</h2>
 
-      <div class="field">
-        <label>Tuo Nome Giocatore</label>
-        <input type="text" id="playerNameInput" placeholder="Es: Marco" />
-      </div>
+        <div class="tab-buttons">
+          <button class="tab-btn active" id="tabJoin" onclick="switchTab('join')">Partite Attive</button>
+          <button class="tab-btn" id="tabCreate" onclick="switchTab('create')">+ Nuova Partita</button>
+        </div>
 
-      <div class="tab-buttons">
-        <button class="tab-btn active" id="tabJoin" onclick="switchTab('join')">Partite Attive</button>
-        <button class="tab-btn" id="tabCreate" onclick="switchTab('create')">+ Nuova Partita</button>
-      </div>
-
-      <!-- Vista: Entra in una partita esistente -->
-      <div id="viewJoin">
-        <div class="field">
-          <label>Seleziona una Partita</label>
-          <div class="existing-rooms-list" id="roomsList">
-            <div style="color: var(--text-dim); font-size: 0.85rem; text-align: center; padding: 12px;">
-              Caricamento partite...
+        <!-- Vista 1A: Entra in partita esistente -->
+        <div id="viewJoin">
+          <div class="field">
+            <label>Seleziona una Partita</label>
+            <div class="existing-rooms-list" id="roomsList">
+              <div style="color: var(--text-dim); font-size: 0.85rem; text-align: center; padding: 12px;">
+                Caricamento partite...
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- Vista 1B: Crea nuova partita -->
+        <div id="viewCreate" style="display: none;">
+          <div class="field">
+            <label>Nome o Codice Partita</label>
+            <input type="text" id="newRoomIdInput" placeholder="Es: VIAGGIO-MARE" style="text-transform: uppercase;" />
+          </div>
+          <div class="field">
+            <label>Modalità di Gioco</label>
+            <select id="newGameModeInput" onchange="onModeChange()">
+              <option value="coop">🤝 Cooperazione (Album unico condiviso)</option>
+              <option value="vs">⚔️ Tutti contro Tutti (Gara a punti)</option>
+            </select>
+          </div>
+          
+          <div class="field" id="ruleContainer" style="display: none;">
+            <label>Regola Targhe Duplicate (Solo in Sfida)</label>
+            <select id="newGameRuleInput">
+              <option value="exclusive">🔒 Targa Unica (il primo la blocca agli altri)</option>
+              <option value="shared">👥 Tutti possono segnarla (Album individuali)</option>
+            </select>
+          </div>
+          <button class="btn-primary" id="btnCreateRoom">Crea Partita &rarr;</button>
+        </div>
+
+        <button class="admin-link-btn" onclick="openAdminModal()">⚙️ Area Gestore Admin</button>
       </div>
 
-      <!-- Vista: Crea nuova partita -->
-      <div id="viewCreate" style="display: none;">
-        <div class="field">
-          <label>Nome o Codice Partita</label>
-          <input type="text" id="newRoomIdInput" placeholder="Es: VIAGGIO-MARE" style="text-transform: uppercase;" />
+      <!-- FASE 2: Scelta o Creazione Giocatore nella stanza scelta -->
+      <div id="stepPlayerSelection" style="display: none;">
+        <h2>👤 Chi sta giocando?</h2>
+        <p style="font-size: 0.85rem; color: var(--text-dim); text-align: center; margin-bottom: 16px;">
+          Partita: <b id="selectedRoomBadge" style="color: var(--accent);"></b>
+        </p>
+
+        <!-- Elenco Giocatori Esistenti -->
+        <div id="existingPlayersContainer" style="display: none;" class="field">
+          <label>Giocatori Esistenti</label>
+          <div class="existing-players-list" id="playersList"></div>
         </div>
-        <div class="field">
-          <label>Modalità di Gioco</label>
-          <select id="newGameModeInput" onchange="onModeChange()">
-            <option value="coop">🤝 Cooperazione (Album unico condiviso)</option>
-            <option value="vs">⚔️ Tutti contro Tutti (Gara a punti)</option>
-          </select>
+
+        <!-- Inserimento Nuovo Giocatore -->
+        <div class="field" style="border-top: 1px solid var(--border); padding-top: 12px;">
+          <label>Oppure inserisci un nuovo giocatore</label>
+          <input type="text" id="newPlayerNameInput" placeholder="Es: Chicco" />
+          <button class="btn-primary" style="margin-top: 10px;" id="btnConfirmNewPlayer">Entra come Nuovo</button>
         </div>
-        
-        <!-- Mostrato solo se si sceglie "Tutti contro Tutti" -->
-        <div class="field" id="ruleContainer" style="display: none;">
-          <label>Regola Targhe Duplicate (Solo in Sfida)</label>
-          <select id="newGameRuleInput">
-            <option value="exclusive">🔒 Targa Unica (il primo la blocca agli altri)</option>
-            <option value="shared">👥 Tutti possono segnarla (Album individuali)</option>
-          </select>
-        </div>
-        <button class="btn-primary" id="btnCreateRoom">Crea e Inizia</button>
+
+        <button class="btn-small" style="width: 100%; margin-top: 10px; background: transparent;" onclick="backToRoomSelection()">&larr; Torna alle Partite</button>
       </div>
 
-      <button class="admin-link-btn" onclick="openAdminModal()">⚙️ Area Gestore Admin</button>
     </div>
   </div>
 
@@ -487,7 +510,6 @@
     <div class="modal-box">
       <h2>⚙️ Pannello Gestore</h2>
       
-      <!-- Login Admin -->
       <div id="adminLoginView">
         <div class="field">
           <label>Username</label>
@@ -501,7 +523,6 @@
         <button class="btn-small" style="width:100%; margin-top: 8px; background: transparent;" onclick="closeAdminModal()">Chiudi</button>
       </div>
 
-      <!-- Elenco Eliminazione Partite (dopo login) -->
       <div id="adminDashboardView" style="display: none;">
         <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:12px;">Elimina definitivamente una stanza dal cloud:</p>
         <div class="existing-rooms-list" id="adminRoomsList"></div>
@@ -516,7 +537,7 @@
 
   <!-- Barra Info Partita Attiva -->
   <div class="room-bar">
-    <span>Stanza: <b id="displayRoom">--</b> (<span id="displayMode">--</span>)</span>
+    <span>Stanza: <b id="displayRoom">--</b> | Giocatore: <b id="displayPlayer">--</b> (<span id="displayMode">--</span>)</span>
     <button class="btn-small" onclick="location.reload()">Esci</button>
   </div>
 
@@ -591,15 +612,9 @@
       document.getElementById("viewCreate").style.display = tab === "create" ? "block" : "none";
     }
 
-    // Mostra/Nasconde l'opzione "Regola Targhe Duplicate" in base alla modalità scelta
     function onModeChange() {
       const mode = document.getElementById("newGameModeInput").value;
-      const ruleContainer = document.getElementById("ruleContainer");
-      if (mode === "vs") {
-        ruleContainer.style.display = "block";
-      } else {
-        ruleContainer.style.display = "none";
-      }
+      document.getElementById("ruleContainer").style.display = mode === "vs" ? "block" : "none";
     }
 
     // Ascolto stanze disponibili
@@ -616,7 +631,7 @@
       if (roomKeys.length === 0) {
         listEl.innerHTML = `
           <div style="color: var(--text-dim); font-size: 0.85rem; text-align: center; padding: 16px;">
-            Nessuna partita attiva.<br>Creane una toccando <b>'+ Nuova Partita'</b> in alto!
+            Nessuna partita attiva.<br>Creane una cliccando su <b>'+ Nuova Partita'</b>!
           </div>
         `;
         return;
@@ -642,9 +657,9 @@
               <span>${count} registrate</span>
             </div>
           </div>
-          <span style="color: var(--accent); font-weight: 700;">Entra &rarr;</span>
+          <span style="color: var(--accent); font-weight: 700;">Seleziona &rarr;</span>
         `;
-        item.onclick = () => joinRoom(key, meta.mode || "coop", meta.rule || "exclusive");
+        item.onclick = () => selectRoom(key, meta.mode || "coop", meta.rule || "exclusive");
         listEl.appendChild(item);
       });
     }
@@ -678,22 +693,82 @@
       }
     }
 
-    // Entra in una stanza
-    function joinRoom(roomKey, mode, rule) {
-      const name = document.getElementById("playerNameInput").value.trim();
-      if (!name) {
-        alert("Inserisci prima il tuo Nome in cima!");
-        document.getElementById("playerNameInput").focus();
-        return;
-      }
-
-      currentPlayer = name;
+    // ==========================================
+    // FASE 1 -> FASE 2: SELEZIONE GIOCATORE
+    // ==========================================
+    function selectRoom(roomKey, mode, rule) {
       currentRoom = roomKey;
       currentMode = mode;
       currentRule = mode === "coop" ? "exclusive" : rule;
 
+      document.getElementById("stepRoomSelection").style.display = "none";
+      document.getElementById("stepPlayerSelection").style.display = "block";
+      document.getElementById("selectedRoomBadge").textContent = roomKey;
+
+      loadRoomPlayers(roomKey);
+    }
+
+    function backToRoomSelection() {
+      document.getElementById("stepPlayerSelection").style.display = "none";
+      document.getElementById("stepRoomSelection").style.display = "block";
+    }
+
+    // Carica i giocatori già presenti nella stanza
+    function loadRoomPlayers(roomKey) {
+      db.ref(`rooms/${roomKey}/players`).once("value", (snapshot) => {
+        const playersObj = snapshot.val() || {};
+        const players = Object.keys(playersObj);
+
+        const containerEl = document.getElementById("existingPlayersContainer");
+        const listEl = document.getElementById("playersList");
+        listEl.innerHTML = "";
+
+        if (players.length > 0) {
+          containerEl.style.display = "block";
+          players.forEach((pName) => {
+            const item = document.createElement("div");
+            item.className = "player-pick-item";
+            item.innerHTML = `
+              <span class="player-pick-name">👤 ${pName}</span>
+              <span style="color: var(--accent); font-weight: 700;">Entra &rarr;</span>
+            `;
+            item.onclick = () => startGameWithPlayer(pName);
+            listEl.appendChild(item);
+          });
+        } else {
+          containerEl.style.display = "none";
+        }
+      });
+    }
+
+    // Conferma nuovo giocatore
+    document.getElementById("btnConfirmNewPlayer").addEventListener("click", () => {
+      const name = document.getElementById("newPlayerNameInput").value.trim();
+      if (!name) {
+        alert("Inserisci un nome per il nuovo giocatore!");
+        return;
+      }
+      startGameWithPlayer(name);
+    });
+
+    document.getElementById("newPlayerNameInput").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        document.getElementById("btnConfirmNewPlayer").click();
+      }
+    });
+
+    // Avvio effettivo della sessione di gioco
+    function startGameWithPlayer(name) {
+      currentPlayer = name;
+
+      // Registra/aggiorna il giocatore nella lista della stanza
+      db.ref(`rooms/${currentRoom}/players/${currentPlayer}`).set({
+        lastSeen: Date.now()
+      });
+
       const modeText = (currentMode === "vs" ? "Gara ⚔️" : "Coop 🤝") + (currentMode === "vs" ? (currentRule === "shared" ? " (Libera)" : " (Blocco)") : "");
       document.getElementById("displayRoom").textContent = currentRoom;
+      document.getElementById("displayPlayer").textContent = currentPlayer;
       document.getElementById("displayMode").textContent = modeText;
 
       if (currentMode === "vs") {
@@ -704,18 +779,12 @@
       listenToRoomChanges();
     }
 
-    // Crea una stanza
+    // Creazione nuova stanza
     document.getElementById("btnCreateRoom").addEventListener("click", () => {
-      const name = document.getElementById("playerNameInput").value.trim();
       let room = document.getElementById("newRoomIdInput").value.trim().toUpperCase();
       const mode = document.getElementById("newGameModeInput").value;
-      // Se è Coop la regola di default è l'album unico condiviso (exclusive)
       const rule = mode === "vs" ? document.getElementById("newGameRuleInput").value : "exclusive";
 
-      if (!name) {
-        alert("Inserisci prima il tuo nome!");
-        return;
-      }
       if (!room) {
         alert("Inserisci un codice o nome per la partita!");
         return;
@@ -730,7 +799,7 @@
         created: Date.now() 
       }, (err) => {
         if (!err) {
-          joinRoom(cleanRoom, mode, rule);
+          selectRoom(cleanRoom, mode, rule);
         }
       });
     });
@@ -750,7 +819,6 @@
       const plateData = roomPlates[padNum];
 
       if (currentMode === "coop" || currentRule === "exclusive") {
-        // Targa bloccata / album unico cooperativo
         if (plateData) {
           if (currentMode === "coop" || plateData.foundBy === currentPlayer) {
             plateRef.remove();
@@ -764,7 +832,6 @@
           });
         }
       } else {
-        // Tutti contro tutti con targhe libere (album individuali)
         const userPlateRef = db.ref(`rooms/${currentRoom}/plates/${padNum}/players/${currentPlayer}`);
         const alreadyFoundByMe = plateData && plateData.players && plateData.players[currentPlayer];
 
